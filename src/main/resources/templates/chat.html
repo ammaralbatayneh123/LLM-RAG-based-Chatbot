@@ -1,0 +1,198 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Chat with AI Bot</title>
+    <style>
+        body {
+            font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+            margin: 0;
+            padding: 0;
+            background: #f9fafb;
+            display: flex;
+            flex-direction: column;
+            height: 100vh;
+        }
+
+        header {
+            background: #2563eb;
+            color: white;
+            padding: 1rem;
+            text-align: center;
+            font-size: 1.3rem;
+            font-weight: bold;
+        }
+
+        main {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            padding: 1rem;
+            max-width: 800px;
+            margin: 0 auto;
+            width: 100%;
+        }
+
+        #uploadForm {
+            margin-bottom: 1rem;
+            display: flex;
+            gap: 0.5rem;
+        }
+
+        #uploadForm input[type="file"] {
+            flex: 1;
+            padding: 0.4rem;
+        }
+
+        #uploadForm button {
+            background: #2563eb;
+            color: white;
+            border: none;
+            padding: 0.5rem 1rem;
+            cursor: pointer;
+            border-radius: 6px;
+            transition: background 0.2s;
+        }
+
+        #uploadForm button:hover {
+            background: #1e4bbd;
+        }
+
+        #uploadStatus {
+            margin-top: 0.5rem;
+            font-size: 0.9rem;
+            color: #374151;
+        }
+
+        #chat-box {
+            flex: 1;
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            padding: 1rem;
+            background: white;
+            overflow-y: auto;
+            margin-bottom: 1rem;
+        }
+
+        .message {
+            margin-bottom: 1rem;
+            padding: 0.7rem 1rem;
+            border-radius: 12px;
+            max-width: 75%;
+            word-wrap: break-word;
+        }
+
+        .user {
+            background: #2563eb;
+            color: white;
+            align-self: flex-end;
+            margin-left: auto;
+        }
+
+        .bot {
+            background: #f3f4f6;
+            color: #111827;
+            align-self: flex-start;
+        }
+
+        #controls {
+            display: flex;
+            gap: 0.5rem;
+        }
+
+        #question {
+            flex: 1;
+            padding: 0.6rem;
+            border-radius: 6px;
+            border: 1px solid #ccc;
+            font-size: 1rem;
+        }
+
+        #sendBtn {
+            background: #2563eb;
+            color: white;
+            border: none;
+            padding: 0.6rem 1.2rem;
+            cursor: pointer;
+            border-radius: 6px;
+            transition: background 0.2s;
+        }
+
+        #sendBtn:hover {
+            background: #1e4bbd;
+        }
+    </style>
+</head>
+<body>
+<header>🤖 Chat with AI Bot</header>
+
+<main>
+    <!-- PDF Upload -->
+    <form id="uploadForm" enctype="multipart/form-data">
+        <input type="file" name="file" accept="application/pdf" required>
+        <button type="submit">Upload PDF</button>
+    </form>
+    <p id="uploadStatus"></p>
+
+    <!-- Chat Box -->
+    <div id="chat-box"></div>
+
+    <!-- Controls -->
+    <div id="controls">
+        <input type="text" id="question" placeholder="Ask a question..."/>
+        <button id="sendBtn">Send</button>
+    </div>
+</main>
+
+<script>
+    const chatBox = document.getElementById("chat-box");
+    const questionInput = document.getElementById("question");
+    const sendBtn = document.getElementById("sendBtn");
+    const uploadForm = document.getElementById("uploadForm");
+    const uploadStatus = document.getElementById("uploadStatus");
+    const userId = "user123"; // later you can generate per session/user
+
+    function appendMessage(sender, text) {
+        const msg = document.createElement("div");
+        msg.classList.add("message", sender);
+        msg.textContent = text;
+        chatBox.appendChild(msg);
+        chatBox.scrollTop = chatBox.scrollHeight;
+    }
+
+    // Handle PDF Upload
+    uploadForm.addEventListener("submit", async (e) => {
+        e.preventDefault();
+        const formData = new FormData(uploadForm);
+        uploadStatus.textContent = "Uploading...";
+        const res = await fetch("/chat/upload", {method: "POST", body: formData});
+        uploadStatus.textContent = await res.text();
+    });
+
+    // Handle Chat
+    async function sendMessage() {
+        const question = questionInput.value.trim();
+        if (!question) return;
+
+        appendMessage("user", question);
+        questionInput.value = "";
+
+        appendMessage("bot", "⏳ Thinking...");
+
+        const res = await fetch(`/chat/ask?userId=${userId}&question=${encodeURIComponent(question)}`, {
+            method: "POST"
+        });
+
+        const botReply = await res.text();
+
+        // Replace "thinking" message
+        chatBox.lastChild.textContent = botReply;
+    }
+
+    sendBtn.addEventListener("click", sendMessage);
+    questionInput.addEventListener("keypress", (e) => {
+        if (e.key === "Enter") sendMessage();
+    });
+</script>
+</body>
+</html>
